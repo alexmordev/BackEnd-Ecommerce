@@ -32,6 +32,7 @@ router.get('/:id',
 router.post('/',
   validatorHandler(createUserSchema, 'body'),
   async (req, res, next) => {
+    // console.log(req.body);
     try {
       const body = req.body;
       const newCategory = await service.create(body);
