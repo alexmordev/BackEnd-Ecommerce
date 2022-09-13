@@ -2320,8 +2320,9 @@ Limit es el numero de elementos a devolver y Offset son los elemetos que se quie
     ~~~
         git push heroku production:main
     ~~~
-
-heroku solo instala las dependencias de desarrollo no las de produccion
+11. Soluciona los errores.
+    1. Modifica la manera en que usas ssl en sequelize
+    2. heroku solo instala las dependencias de desarrollo no las de produccion, pasa sequelize a produccicon en package.json
 
 
 ## (Pendiente) Agrega MySQL para practicar cambio de bases de datos
