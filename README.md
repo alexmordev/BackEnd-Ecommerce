@@ -2322,8 +2322,110 @@ Limit es el numero de elementos a devolver y Offset son los elemetos que se quie
     ~~~
 11. Soluciona los errores.
     1. Modifica la manera en que usas ssl en sequelize
-    2. heroku solo instala las dependencias de desarrollo no las de produccion, pasa sequelize a produccicon en package.json
+        ~~~
+            const { Sequelize } = require('sequelize');
+            const { config } = require('../config/config');
+            const setupModels = require('../db/models');
 
+            const options = {
+                dialect: 'postgres',
+                logging: config.isProduction ? false : true, //mostrar la traducción a sql de las peticioes hechas
+            }
+            if(config.isProduction){
+                options.dialectOptions = {
+                    ssl:{
+                        rejectUnauthorized: false
+                    }
+                }
+            }
+            const sequelize =  new Sequelize(config.dbURL, options )
+            setupModels(sequelize);
+
+            // sequelize.sync( ); //No es la mejor practica es mejor usar migraciones
+
+            module.exports = sequelize;
+        ~~~
+    2. heroku solo instala las dependencias de desarrollo, pasa sequelize a produccicon en packageJson.
+       ~~~
+        "dependencies": {
+            "sequelize-cli": "^6.4.1",
+            "@hapi/boom": "^9.1.4",
+            "cors": "^2.8.5",
+            "dotenv": "^16.0.1",
+            "express": "^4.17.1",
+            "faker": "^5.5.3",
+            "joi": "^17.4.2",
+            "mysql2": "^2.3.3",
+            "pg": "^8.8.0",
+            "pg-hstore": "^2.3.4",
+            "sequelize": "^6.21.4"
+        },
+       ~~~
+    3. Guarda los cambios en un nuevo commit y haz tu deployment en heroku.
+        ~~~
+            $ git commit -am " I took off virtual from de table orders"
+            $ git push heroku production:main
+        ~~~
+    4. Corre las migraciones. (obtendrás errores)
+        ~~~
+            $ heroku run npm run migrations:run
+        ~~~
+12. Solucionar errores en las migraciones. 
+    Los errores en migraciones son lo más comun. La mejor practica es tener un modelo por cada migración que se ha corrido, si en este caso solo tienes el error de la migracion orders. Sigue estos pasos.
+    
+    1. Agrega solo las modificaciones hechas en la migración deja fuera de tu schema de migracion el campo virtual.
+         ~~~
+            'use strict';
+            const { ORDER_TABLE} = require('../models/order.model');
+            const { COSTUMER_TABLE } = require('../models/costumer.model');
+            const { DataTypes, Sequelize } = require('sequelize');
+
+            module.exports = {
+            async up (queryInterface) {
+                await queryInterface.createTable( ORDER_TABLE , 
+                {
+                    id:{
+                        allowNull:false, //no puede ser falso
+                        autoIncrement: true,
+                        primaryKey: true,
+                        type: DataTypes.INTEGER
+                    },
+                    createdAt:{
+                        allowNull: false,
+                        type: DataTypes.DATE,
+                        field: 'created_at',
+                        defaultValue: Sequelize.NOW,
+                    },
+                    costumerId:{
+                        field:"costumer_id",
+                        allowNull: false,
+                        type: DataTypes.INTEGER,
+                        references:{
+                            model: COSTUMER_TABLE, //importa tu modelo User
+                            key: 'id',
+                        },
+                        onUpdate: 'CASCADE', // Esto ocurre al actualizar, un efecto en cascada y tambien se actualiza
+                        onDelete: 'SET NULL' // Esto ocurre al borrar, se establece a null
+                    }
+                }
+
+                );
+
+            },
+            async down (queryInterface) {
+                await queryInterface.dropTable( ORDER_TABLE );
+            }
+            };
+
+        ~~~
+    2. Guarda los cambos en un commit, haz tu deployment, corre tus migraciones.
+        ~~~
+            $ git commit -am " I took off virtual from de table orders"
+            $ git push heroku production:main
+            $ heroku run npm run migrations:run
+        ~~~
+13. Ahora prueba las rutas utilizando tus endpoints
+        <img src="utils/images/test4.png"/>
 
 ## (Pendiente) Agrega MySQL para practicar cambio de bases de datos
 1. Crea la imagen de mysql y de phpmyadmin
