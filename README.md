@@ -2321,7 +2321,7 @@ Limit es el numero de elementos a devolver y Offset son los elemetos que se quie
         git push heroku production:main
     ~~~
 
-
+heroku solo instala las dependencias de desarrollo no las de produccion
 
 
 ## (Pendiente) Agrega MySQL para practicar cambio de bases de datos
