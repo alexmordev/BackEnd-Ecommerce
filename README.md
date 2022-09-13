@@ -22,6 +22,7 @@
 19. Paginacion con limit y offset
 20. Agrega un filtro de precio.
 21. Agrega un filtro por rango  de precio.
+22. Deploy en Heroku
 
 ## Teconologias
 1. Node https://node-postgres.com/
@@ -34,6 +35,7 @@
 8. Sequelize. https://sequelize.org/
 9. boom. https://github.com/hapijs/boom
 10. joi. https://joi.dev/api/
+11. Heroku. https://dashboard.heroku.com/
 
 
 
@@ -2228,6 +2230,99 @@ Limit es el numero de elementos a devolver y Offset son los elemetos que se quie
         }
     ]
    ~~~
+## Deploy Heroku
+1. Sube tus cambios a github.
+   ~~~
+    git push origin main
+   ~~~
+2. Agrega tu repo a Heroku.
+   ~~~
+    heroku git:remote a -name-project-on-heroku
+   ~~~
+3. Crear las gestiones para la base de datos que quiero que sea almacenada
+   ~~~
+    heroku addons:create heroku-postgresql:hobby-dev
+   ~~~
+4. Crea una variable de entorno con tu URL de produccion
+   ~~~
+   PORT = 3030
+    DB_USER='adminUser'
+    DB_PASSWORD='password'
+    DB_HOST='localhost'
+    DB_NAME='my_store'
+    DB_PORT='5432'
+    DATABASE_URL = 'postgres://adminUser:password@localhost:5432/my_store'
+   ~~~
+5. Crea una variable de entorno que indique si estás o no en produccion
+   ~~~
+   require('dotenv').config();
+    const config={
+        env: process.env.NODE_ENV || 'dev',
+        isProduction: process.env.NODE_ENV === 'production',
+        port: process.env.PORT || 3030,
+        dbUser: process.env.DB_USER,
+        dbPassword: process.env.DB_PASSWORD,
+        dbHost: process.env.DB_HOST,
+        dbName: process.env.DB_NAME,
+        dbPort: process.env.DB_PORT,
+        dbURL: process.env.DATABASE_URL
+    }
+    module.exports = {config};
+   ~~~
+6. En tu config.db crea la logica que indique si es que estamos o no en produccion
+   ~~~
+   const { config } = require('../config/config');
+
+    module.exports = {
+        development:{
+            url: config.dbURL,
+            dialect: 'postgres',
+        },
+        production:{
+            url:config.dbURL,
+            dialect: 'postgres',
+            ssl:{
+                rejectUnauthorized: false
+            }
+        }
+    }
+   ~~~
+7. Indica el proceso de produccion tambien dentro de sequelize
+   ~~~
+    const { Sequelize } = require('sequelize');
+    const { config } = require('../config/config');
+    const setupModels = require('../db/models');
+
+    const options = {
+        dialect: 'postgres',
+        logging: config.isProduction ? false : true, //mostrar la traducción a sql de las peticioes hechas
+    }
+    if(config.isProduction){
+        options.ssl = {
+            rejectUnauthorized: false
+        }
+    }
+    const sequelize =  new Sequelize(config.dbURL, options )
+    setupModels(sequelize);
+
+    // sequelize.sync( ); //No es la mejor practica es mejor usar migraciones
+
+    module.exports = sequelize;
+   ~~~
+8. Realiza pruebas de coneccion.
+    <img src="utils/images/test3.png"/><br>
+    Si aún te devuelve valores quiere decir que ahora está tomando tu cadena larga creada del lado de config, lo que significa que ya estás listo para reemplazar esa cadena por los valores que te entregue heroku 
+9. Crea una nueva rama para no trabajar con tu rama main
+    ~~~
+        git checkout -b production
+    ~~~
+10. haz tu deployment
+    ~~~
+        git push heroku production:main
+    ~~~
+
+
+
 
 ## (Pendiente) Agrega MySQL para practicar cambio de bases de datos
 1. Crea la imagen de mysql y de phpmyadmin
